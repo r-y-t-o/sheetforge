@@ -224,24 +224,37 @@ const naming = (function () {
         const gap = document.createElement('span');
         gap.className = 'drop-gap';
         gap.dataset.insert = insertIndex;
-        gap.addEventListener('dragover', (e) => {
-            if (!canDrop(e)) return;
-            e.preventDefault();
-            gap.classList.add('active');
-            e.dataTransfer.dropEffect = 'move';
-        });
-        gap.addEventListener('dragleave', () => gap.classList.remove('active'));
-        gap.addEventListener('drop', (e) => {
-            e.preventDefault();
-            gap.classList.remove('active');
-            handleDrop(e, insertIndex);
-        });
         return gap;
     }
 
-    function canDrop(e) {
-        return e.dataTransfer.types.includes('application/x-sf-token') ||
-               e.dataTransfer.types.includes('application/x-sf-sep');
+    // Compute which gap index the cursor is closest to. We use the gap
+    // element centers so reorder/insert drops are predictable regardless
+    // of how narrow each individual gap's hit box actually is.
+    function computeInsertIndex(clientX, clientY) {
+        const gaps = document.querySelectorAll('#pattern-row .drop-gap');
+        if (!gaps.length) return 0;
+        let bestIdx = 0, bestDist = Infinity;
+        gaps.forEach((g) => {
+            const r = g.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            // Weight Y more heavily than X so multi-row patterns pick the
+            // correct row before picking within a row.
+            const d = Math.abs(clientX - cx) + Math.abs(clientY - cy) * 3;
+            if (d < bestDist) { bestDist = d; bestIdx = Number(g.dataset.insert); }
+        });
+        return bestIdx;
+    }
+
+    function highlightGap(idx) {
+        document.querySelectorAll('#pattern-row .drop-gap').forEach((g) => {
+            g.classList.toggle('active', Number(g.dataset.insert) === idx);
+        });
+    }
+
+    function clearGapHighlight() {
+        document.querySelectorAll('#pattern-row .drop-gap.active')
+            .forEach((g) => g.classList.remove('active'));
     }
 
     function handleDrop(e, insertIndex) {
@@ -272,23 +285,35 @@ const naming = (function () {
 
     function installPatternDropHandlers() {
         const row = document.getElementById('pattern-row');
-        // Visual affordance on the row itself + allow dropping directly on it
-        // (appends to end) for better hit-targets.
-        row.addEventListener('dragover', (e) => {
-            if (!canDrop(e)) return;
+        // Unconditional preventDefault on dragenter+dragover so the browser
+        // accepts the drop everywhere on the row. We compute the exact
+        // insertion point from cursor XY rather than relying on per-gap
+        // hit-testing (which was unreliable — thin gaps, pseudo-elements).
+        row.addEventListener('dragenter', (e) => {
             e.preventDefault();
             row.classList.add('drag-active');
         });
+        row.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect =
+                e.dataTransfer.types && e.dataTransfer.types.length &&
+                Array.from(e.dataTransfer.types).includes('application/x-sf-token')
+                    ? 'move' : 'copy';
+            row.classList.add('drag-active');
+            highlightGap(computeInsertIndex(e.clientX, e.clientY));
+        });
         row.addEventListener('dragleave', (e) => {
-            if (e.target === row) row.classList.remove('drag-active');
+            // Only clear when we actually leave the row (not on child transitions).
+            if (!row.contains(e.relatedTarget)) {
+                row.classList.remove('drag-active');
+                clearGapHighlight();
+            }
         });
         row.addEventListener('drop', (e) => {
-            row.classList.remove('drag-active');
-            // If drop landed on a gap, that handler runs first and calls
-            // preventDefault, so we only reach here for drops on empty space.
-            if (e.defaultPrevented) return;
             e.preventDefault();
-            handleDrop(e, state.tokens.length);
+            row.classList.remove('drag-active');
+            clearGapHighlight();
+            handleDrop(e, computeInsertIndex(e.clientX, e.clientY));
         });
     }
 

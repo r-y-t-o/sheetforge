@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>SheetForge — Revit sheet PDFs, renamed</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/js/theme.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<!-- ───────────────────────────── Login ───────────────────────────── -->
+<section id="login-screen" class="screen active">
+    <div class="login-wrap">
+        <div class="brand brand-lg">
+            <span class="brand-mark" data-icon="forge"></span>
+            <span class="brand-name">Sheet<span class="brand-accent">Forge</span></span>
+        </div>
+        <p class="brand-tagline">Export named Revit sheets from Autodesk Construction Cloud.</p>
+
+        <div class="card login-card">
+            <a href="/auth/login" class="btn cta block">
+                <span class="btn-icon" data-icon="autodesk"></span>
+                Sign in with Autodesk
+            </a>
+
+            <div id="token-login-block" class="hidden">
+                <div class="divider"><span>or paste a token</span></div>
+                <input id="token-input" type="text" placeholder="APS access token" autocomplete="off" spellcheck="false" />
+                <button id="token-login-btn" class="btn secondary block">
+                    <span class="btn-icon" data-icon="lock"></span>
+                    Login with token
+                </button>
+            </div>
+
+            <div id="login-error" class="alert alert-error hidden"></div>
+        </div>
+
+        <p class="login-foot">Your ACC credentials never touch this server — OAuth flows directly to Autodesk.</p>
+    </div>
+</section>
+
+<!-- ───────────────────────────── App ───────────────────────────── -->
+<section id="app-screen" class="screen">
+    <nav class="topnav">
+        <div class="topnav-inner">
+            <div class="brand">
+                <span class="brand-mark" data-icon="forge"></span>
+                <span class="brand-name">Sheet<span class="brand-accent">Forge</span></span>
+                <span class="brand-version">v0.2</span>
+            </div>
+            <div class="topnav-right">
+                <span id="auth-badge" class="pill pill-primary"></span>
+                <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+                    <span class="theme-icon-light" data-icon="moon"></span>
+                    <span class="theme-icon-dark" data-icon="sun"></span>
+                </button>
+                <button id="logout-btn" class="btn ghost">
+                    <span class="btn-icon" data-icon="logout"></span>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page">
+        <header class="page-head">
+            <h1>Export <span class="hl">Revit sheets</span> with custom filenames</h1>
+            <p class="page-sub">Pick a model, choose which parameters drive the filename, order them, and publish — as a ZIP, into ACC, or both.</p>
+        </header>
+
+        <!-- Step 1 — Source -->
+        <section class="card step-card">
+            <h2 class="step-heading">
+                <span class="step-num">1</span>
+                <span class="step-icon" data-icon="hub"></span>
+                <span>Select the Revit model</span>
+            </h2>
+            <p class="muted">Browse your ACC hubs and pick a published <code>.rvt</code> file.</p>
+            <div id="source-tree" class="tree"></div>
+            <div id="selected-source" class="selection hidden"></div>
+        </section>
+
+        <!-- Step 2 — Pick parameters -->
+        <section class="card step-card" id="params-card" hidden>
+            <h2 class="step-heading">
+                <span class="step-num">2</span>
+                <span class="step-icon" data-icon="tag"></span>
+                <span>Pick the parameters to include</span>
+            </h2>
+            <div id="sheets-status" class="muted">Loading sheet metadata…</div>
+
+            <div id="params-ui" class="hidden">
+                <p class="muted">Click a parameter to include it. The ticked parameters become the building blocks of your filename in step&nbsp;3.</p>
+                <div class="group-bar">
+                    <span id="selected-count" class="pill pill-primary">0 selected</span>
+                    <div class="spacer"></div>
+                    <button id="params-clear" type="button" class="btn ghost sm">
+                        <span class="btn-icon" data-icon="x"></span>Clear
+                    </button>
+                </div>
+                <div id="param-groups" class="param-groups"></div>
+            </div>
+        </section>
+
+        <!-- Step 3 — Arrange & separators -->
+        <section class="card step-card" id="arrange-card" hidden>
+            <h2 class="step-heading">
+                <span class="step-num">3</span>
+                <span class="step-icon" data-icon="arrange"></span>
+                <span>Arrange the filename</span>
+            </h2>
+            <p class="muted">Drag the parameters into the order you want. Drag a separator from the tray into the gaps between parameters.</p>
+
+            <label class="field-label">
+                <span class="label-icon" data-icon="sliders"></span>
+                Filename pattern
+            </label>
+            <div id="pattern-row" class="pattern-row" aria-label="Filename pattern — drop zone"></div>
+
+            <label class="field-label">
+                <span class="label-icon" data-icon="drag"></span>
+                Separator tray — drag into the pattern
+            </label>
+            <div id="separator-tray" class="separator-tray">
+                <div class="sep-tile" draggable="true" data-sep="-" title="Hyphen — drag into the pattern">
+                    <span class="sep-glyph">-</span><span class="sep-name">hyphen</span>
+                </div>
+                <div class="sep-tile" draggable="true" data-sep="_" title="Underscore — drag into the pattern">
+                    <span class="sep-glyph">_</span><span class="sep-name">underscore</span>
+                </div>
+            </div>
+
+            <div class="inline-row">
+                <label class="field-label">Placeholder for missing values</label>
+                <input id="placeholder-input" type="text" value="" placeholder="(skip empty)" />
+            </div>
+
+            <label class="field-label">
+                <span class="label-icon" data-icon="preview"></span>
+                Preview (first 5 sheets)
+            </label>
+            <ul id="preview-list" class="preview-list"></ul>
+        </section>
+
+        <!-- Step 4 — Delivery -->
+        <section class="card step-card" id="delivery-card" hidden>
+            <h2 class="step-heading">
+                <span class="step-num">4</span>
+                <span class="step-icon" data-icon="cloud-up"></span>
+                <span>Deliver the PDFs</span>
+            </h2>
+
+            <div class="mode-grid">
+                <label class="mode-tile">
+                    <input type="radio" name="delivery" value="acc" checked />
+                    <span class="mode-icon" data-icon="cloud-up"></span>
+                    <span class="mode-title">Upload to ACC</span>
+                    <span class="mode-sub">Pick a target folder</span>
+                </label>
+                <label class="mode-tile">
+                    <input type="radio" name="delivery" value="zip" />
+                    <span class="mode-icon" data-icon="download"></span>
+                    <span class="mode-title">Download ZIP</span>
+                    <span class="mode-sub">One archive, local</span>
+                </label>
+                <label class="mode-tile">
+                    <input type="radio" name="delivery" value="both" />
+                    <span class="mode-icon" data-icon="cloud-down"></span>
+                    <span class="mode-title">Both</span>
+                    <span class="mode-sub">Upload and keep a copy</span>
+                </label>
+            </div>
+
+            <div id="target-section">
+                <label class="field-label">
+                    <span class="label-icon" data-icon="folder"></span>Target folder
+                </label>
+                <div id="target-tree" class="tree"></div>
+                <div id="selected-target" class="selection hidden"></div>
+            </div>
+
+            <button id="run-btn" class="btn cta lg" disabled>
+                <span class="btn-icon" data-icon="play"></span>
+                <span id="run-btn-label">Run export</span>
+            </button>
+
+            <div id="progress" class="progress hidden">
+                <div class="bar"><div id="progress-fill" class="bar-fill"></div></div>
+                <div id="progress-text" class="muted"></div>
+            </div>
+            <div id="result" class="alert hidden"></div>
+
+            <div id="file-table-wrap" class="hidden">
+                <h3 class="sub-head">
+                    <span class="label-icon" data-icon="document"></span>Files
+                </h3>
+                <div class="table-scroll">
+                    <table id="file-table" class="file-table">
+                        <thead><tr>
+                            <th><input type="checkbox" id="select-all" checked /></th>
+                            <th>Original</th>
+                            <th><span class="arrow" data-icon="chevron-right"></span>Renamed</th>
+                            <th>Matched sheet</th>
+                            <th>Status</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+</section>
+
+<script src="/js/icons.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/tree.js"></script>
+<script src="/js/naming.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

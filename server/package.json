@@ -1,0 +1,23 @@
+{
+  "name": "sheetforge-server",
+  "version": "0.2.0",
+  "description": "SheetForge — export Revit sheets from ACC as PDFs with custom filename patterns built from title-block and sheet parameters.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "axios": "^1.7.7",
+    "cookie-session": "^2.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "p-limit": "^3.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}

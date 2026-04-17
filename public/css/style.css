@@ -413,7 +413,7 @@ label, .field-label {
 
 /* ---------- 16. Pattern row + separators (Step 3) ---------- */
 .pattern-row {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0;
     min-height: 54px; padding: 10px;
     border: 1.5px dashed var(--color-border); border-radius: 12px;
     background: var(--color-bg-secondary);
@@ -465,13 +465,28 @@ label, .field-label {
 }
 .token-sep .token-close:hover { opacity: 1; }
 
+/* Wider hit target (invisible padding) so drags land reliably; inner bar
+   is the visible affordance. First/last gaps stretch to fill row edges. */
 .drop-gap {
+    position: relative;
+    width: 16px; height: 32px;
+    align-self: center;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: copy;
+}
+.drop-gap::before {
+    content: "";
     width: 3px; height: 28px; border-radius: 3px;
     background: transparent;
-    transition: background-color 0.1s ease, width 0.1s ease;
-    align-self: center;
+    transition: background-color 0.1s ease, width 0.1s ease, height 0.1s ease;
 }
-.drop-gap.active { background: var(--color-accent); width: 6px; }
+.drop-gap.active::before {
+    background: var(--color-accent);
+    width: 6px; height: 32px;
+}
+/* Keep the first/last gap slightly narrower so tokens still hug the row edges. */
+.pattern-row > .drop-gap:first-child,
+.pattern-row > .drop-gap:last-child { width: 10px; }
 
 /* Separator tray */
 .separator-tray {

@@ -75,86 +75,101 @@
         </header>
 
         <!-- Step 1 — Source -->
-        <section class="card step-card">
-            <h2 class="step-heading">
+        <section class="card step-card" id="source-card">
+            <button class="step-heading" type="button" aria-expanded="true" aria-controls="source-body">
                 <span class="step-num">1</span>
                 <span class="step-icon" data-icon="hub"></span>
-                <span>Select the Revit model</span>
-            </h2>
-            <p class="muted">Browse your ACC hubs and pick a published <code>.rvt</code> file.</p>
-            <div id="source-tree" class="tree"></div>
-            <div id="selected-source" class="selection hidden"></div>
+                <span class="step-title">Select the Revit model</span>
+                <span class="step-summary" id="source-summary"></span>
+                <span class="step-chevron" data-icon="chevron-down"></span>
+            </button>
+            <div class="step-body" id="source-body">
+                <p class="muted">Browse your ACC hubs and pick a published <code>.rvt</code> file.</p>
+                <div id="source-tree" class="tree"></div>
+                <div id="selected-source" class="selection hidden"></div>
+            </div>
         </section>
 
         <!-- Step 2 — Pick parameters -->
         <section class="card step-card" id="params-card" hidden>
-            <h2 class="step-heading">
+            <button class="step-heading" type="button" aria-expanded="true" aria-controls="params-body">
                 <span class="step-num">2</span>
                 <span class="step-icon" data-icon="tag"></span>
-                <span>Pick the parameters to include</span>
-            </h2>
-            <div id="sheets-status" class="muted">Loading sheet metadata…</div>
+                <span class="step-title">Pick the parameters to include</span>
+                <span class="step-summary" id="params-summary"></span>
+                <span class="step-chevron" data-icon="chevron-down"></span>
+            </button>
+            <div class="step-body" id="params-body">
+                <div id="sheets-status" class="muted">Loading sheet metadata…</div>
 
-            <div id="params-ui" class="hidden">
-                <p class="muted">Click a parameter to include it. The ticked parameters become the building blocks of your filename in step&nbsp;3.</p>
-                <div class="group-bar">
-                    <span id="selected-count" class="pill pill-primary">0 selected</span>
-                    <div class="spacer"></div>
-                    <button id="params-clear" type="button" class="btn ghost sm">
-                        <span class="btn-icon" data-icon="x"></span>Clear
-                    </button>
+                <div id="params-ui" class="hidden">
+                    <p class="muted">Click a parameter to include it. The ticked parameters become the building blocks of your filename in step&nbsp;3.</p>
+                    <div class="group-bar">
+                        <span id="selected-count" class="pill pill-primary">0 selected</span>
+                        <div class="spacer"></div>
+                        <button id="params-clear" type="button" class="btn ghost sm">
+                            <span class="btn-icon" data-icon="x"></span>Clear
+                        </button>
+                    </div>
+                    <div id="param-groups" class="param-groups"></div>
                 </div>
-                <div id="param-groups" class="param-groups"></div>
             </div>
         </section>
 
         <!-- Step 3 — Arrange & separators -->
         <section class="card step-card" id="arrange-card" hidden>
-            <h2 class="step-heading">
+            <button class="step-heading" type="button" aria-expanded="true" aria-controls="arrange-body">
                 <span class="step-num">3</span>
                 <span class="step-icon" data-icon="arrange"></span>
-                <span>Arrange the filename</span>
-            </h2>
-            <p class="muted">Drag the parameters into the order you want. Drag a separator from the tray into the gaps between parameters.</p>
+                <span class="step-title">Arrange the filename</span>
+                <span class="step-summary" id="arrange-summary"></span>
+                <span class="step-chevron" data-icon="chevron-down"></span>
+            </button>
+            <div class="step-body" id="arrange-body">
+                <p class="muted">Drag the parameters into the order you want. Drag a separator from the tray into the gaps between parameters.</p>
 
-            <label class="field-label">
-                <span class="label-icon" data-icon="sliders"></span>
-                Filename pattern
-            </label>
-            <div id="pattern-row" class="pattern-row" aria-label="Filename pattern — drop zone"></div>
+                <label class="field-label">
+                    <span class="label-icon" data-icon="sliders"></span>
+                    Filename pattern
+                </label>
+                <div id="pattern-row" class="pattern-row" aria-label="Filename pattern — drop zone"></div>
 
-            <label class="field-label">
-                <span class="label-icon" data-icon="drag"></span>
-                Separator tray — drag into the pattern
-            </label>
-            <div id="separator-tray" class="separator-tray">
-                <div class="sep-tile" draggable="true" data-sep="-" title="Hyphen — drag into the pattern">
-                    <span class="sep-glyph">-</span><span class="sep-name">hyphen</span>
+                <label class="field-label">
+                    <span class="label-icon" data-icon="drag"></span>
+                    Separator tray — drag into the pattern
+                </label>
+                <div id="separator-tray" class="separator-tray">
+                    <div class="sep-tile" draggable="true" data-sep="-" title="Hyphen — drag into the pattern">
+                        <span class="sep-glyph">-</span><span class="sep-name">hyphen</span>
+                    </div>
+                    <div class="sep-tile" draggable="true" data-sep="_" title="Underscore — drag into the pattern">
+                        <span class="sep-glyph">_</span><span class="sep-name">underscore</span>
+                    </div>
                 </div>
-                <div class="sep-tile" draggable="true" data-sep="_" title="Underscore — drag into the pattern">
-                    <span class="sep-glyph">_</span><span class="sep-name">underscore</span>
+
+                <div class="inline-row">
+                    <label class="field-label">Placeholder for missing values</label>
+                    <input id="placeholder-input" type="text" value="" placeholder="(skip empty)" />
                 </div>
-            </div>
 
-            <div class="inline-row">
-                <label class="field-label">Placeholder for missing values</label>
-                <input id="placeholder-input" type="text" value="" placeholder="(skip empty)" />
+                <label class="field-label">
+                    <span class="label-icon" data-icon="preview"></span>
+                    Preview (first 5 sheets)
+                </label>
+                <ul id="preview-list" class="preview-list"></ul>
             </div>
-
-            <label class="field-label">
-                <span class="label-icon" data-icon="preview"></span>
-                Preview (first 5 sheets)
-            </label>
-            <ul id="preview-list" class="preview-list"></ul>
         </section>
 
         <!-- Step 4 — Delivery -->
         <section class="card step-card" id="delivery-card" hidden>
-            <h2 class="step-heading">
+            <button class="step-heading" type="button" aria-expanded="true" aria-controls="delivery-body">
                 <span class="step-num">4</span>
                 <span class="step-icon" data-icon="cloud-up"></span>
-                <span>Deliver the PDFs</span>
-            </h2>
+                <span class="step-title">Deliver the PDFs</span>
+                <span class="step-summary" id="delivery-summary"></span>
+                <span class="step-chevron" data-icon="chevron-down"></span>
+            </button>
+            <div class="step-body" id="delivery-body">
 
             <div class="mode-grid">
                 <label class="mode-tile">
@@ -213,6 +228,7 @@
                     </table>
                 </div>
             </div>
+            </div><!-- /step-body -->
         </section>
     </main>
 </section>

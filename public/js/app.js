@@ -52,12 +52,78 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('target-section').style.display =
                 state.deliveryMode === 'zip' ? 'none' : '';
             updateRunButton();
+            updateDeliverySummary();
         });
     });
     document.getElementById('run-btn').addEventListener('click', handleRun);
 
-    naming.init({ onChange: () => { /* preview auto-updates */ } });
+    naming.init({ onChange: updateArrangeSummary });
+
+    installStepCollapse();
 });
+
+// ----- Step accordion -----
+const STEP_CARDS = ['source-card', 'params-card', 'arrange-card', 'delivery-card'];
+
+function installStepCollapse() {
+    STEP_CARDS.forEach((id) => {
+        const card = document.getElementById(id);
+        const heading = card.querySelector('.step-heading');
+        heading.addEventListener('click', () => toggleStep(id));
+    });
+}
+
+function toggleStep(id, force) {
+    const card = document.getElementById(id);
+    const collapsed = force == null
+        ? !card.classList.contains('collapsed')
+        : !!force;
+    card.classList.toggle('collapsed', collapsed);
+    card.querySelector('.step-heading').setAttribute('aria-expanded', String(!collapsed));
+}
+
+function collapseStep(id)  { toggleStep(id, true);  }
+function expandStep(id)    {
+    const card = document.getElementById(id);
+    if (card.hidden) card.hidden = false;
+    toggleStep(id, false);
+}
+
+// Update the inline summary shown in a collapsed heading.
+function setStepSummary(spanId, text) {
+    const el = document.getElementById(spanId);
+    if (el) el.textContent = text;
+}
+
+function updateSourceSummary() {
+    const s = state.source;
+    setStepSummary('source-summary', s ? `· ${s.name}` : '');
+}
+function updateParamsSummary() {
+    const cfg = naming.getConfig();
+    const n = cfg.pattern.length;
+    setStepSummary('params-summary', n ? `· ${n} parameter${n === 1 ? '' : 's'} selected` : '');
+}
+function updateArrangeSummary() {
+    const cfg = naming.getConfig();
+    if (!cfg.pattern.length) { setStepSummary('arrange-summary', ''); return; }
+    // Mirror the preview format: join field short-labels with the chosen separators.
+    const shorten = (k) => k.includes('.') ? k.split('.').slice(1).join('.') : k;
+    let s = '';
+    for (let i = 0; i < cfg.pattern.length; i++) {
+        if (i > 0) s += cfg.separators[i - 1] || '';
+        s += `{${shorten(cfg.pattern[i])}}`;
+    }
+    setStepSummary('arrange-summary', `· ${s}`);
+    // Refresh the params summary too — it depends on the same pattern.
+    updateParamsSummary();
+}
+function updateDeliverySummary() {
+    const labels = { acc: 'Upload to ACC', zip: 'Download ZIP', both: 'Upload + ZIP' };
+    let s = labels[state.deliveryMode] || '';
+    if (state.deliveryMode !== 'zip' && state.target) s += ` → ${state.target.name}`;
+    setStepSummary('delivery-summary', s ? `· ${s}` : '');
+}
 
 function showLogin() {
     document.getElementById('login-screen').classList.add('active');
@@ -88,13 +154,15 @@ async function handleSourceSelect(sel) {
     const el = document.getElementById('selected-source');
     el.textContent = sel.name;
     el.classList.remove('hidden');
+    updateSourceSummary();
 
     if (!sel.versionUrn) {
         el.textContent = `${sel.name} — no version URN found, cannot export`;
         return;
     }
 
-    document.getElementById('params-card').hidden = false;
+    expandStep('params-card');
+    collapseStep('source-card');
     document.getElementById('params-ui').classList.add('hidden');
     const status = document.getElementById('sheets-status');
     status.textContent = 'Translating model + reading sheet parameters (this can take a minute on first run)…';
@@ -106,6 +174,9 @@ async function handleSourceSelect(sel) {
         document.getElementById('params-ui').classList.remove('hidden');
         document.getElementById('arrange-card').hidden = false;
         document.getElementById('delivery-card').hidden = false;
+        updateParamsSummary();
+        updateArrangeSummary();
+        updateDeliverySummary();
 
         if (!document.getElementById('target-tree').dataset.mounted) {
             mountTree('target-tree', 'target', handleTargetSelect);
@@ -123,6 +194,7 @@ function handleTargetSelect(sel) {
     el.textContent = sel.name;
     el.classList.remove('hidden');
     updateRunButton();
+    updateDeliverySummary();
 }
 
 function updateRunButton() {
